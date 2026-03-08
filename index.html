@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rates of Reaction Simulator - Chemical Kinetics</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Source+Sans+Pro:wght@400;600;700&family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: #1a0f0a;
+            --secondary-bg: #2d1810;
+            --tertiary-bg: #3d2418;
+            --accent-orange: #ff6b2c;
+            --accent-red: #e63946;
+            --accent-yellow: #ffba08;
+            --accent-amber: #f77f00;
+            --text-primary: #fef4e8;
+            --text-secondary: #d4a574;
+            --text-muted: #9c7853;
+            --border-color: #4d3122;
+            --success: #06d6a0;
+            --error: #ef476f;
+            --warning: #ffd60a;
+            --grid-color: rgba(255, 107, 44, 0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Source Sans Pro', sans-serif;
+            background: var(--primary-bg);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(255, 107, 44, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(247, 127, 0, 0.08) 0%, transparent 50%),
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 100%, 25px 25px, 25px 25px;
+            pointer-events: none;
+            z-index: 0;
+            animation: pulse 8s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 0.8; }
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        header {
+            background: linear-gradient(135deg, var(--secondary-bg) 0%, var(--tertiary-bg) 100%);
+            padding: 35px;
+            border-radius: 20px;
+            border: 2px solid var(--border-color);
+            margin-bottom: 30px;
+            box-shadow: 0 15px 50px rgba(255, 107, 44, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-red), var(--accent-orange), var(--accent-yellow));
+            animation: shimmer 3s linear infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        h1 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.8rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-yellow));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -1px;
+        }
+
+        .subtitle {
+            font-family: 'Fira Code', monospace;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        /* Tab Navigation */
+        .tab-navigation {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+            background: var(--secondary-bg);
+            padding: 12px;
+            border-radius: 16px;
+            border: 2px solid var(--border-color);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 16px 30px;
+            background: transparent;
+            border: 2px solid transparent;
+            color: var(--text-secondary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tab-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 107, 44, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-primary);
+            background: rgba(255, 107, 44, 0.05);
+            transform: translateY(-2px);
+        }
+
+        .tab-btn:hover::before {
+            left: 100%;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-amber));
+            border-color: var(--accent-yellow);
+            color: var(--primary-bg);
+            box-shadow: 0 4px 20px rgba(255, 107, 44, 0.4);
+            font-weight: 700;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            animation: fadeInUp 0.5s ease;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Simulation Tab Layout */
+        .simulation-container {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 25px;
+        }
+
+        .canvas-section {
+            background: var(--secondary-bg);
+            padding: 25px;
+            border-radius: 20px;
+            border: 2px solid var(--border-color);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .mode-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .mode-btn {
+            padding: 12px 16px;
+            background: var(--tertiary-bg);
+            border: 2px solid var(--border-color);
+            color: var(--text-secondary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 10px;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .mode-btn:hover {
+            border-color: var(--accent-orange);
+            color: var(--accent-orange);
+            transform: scale(1.02);
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-amber));
+            border-color: var(--accent-yellow);
+            color: var(--primary-bg);
+            box-shadow: 0 4px 15px rgba(255, 107, 44, 0.3);
+        }
+
+        #mainCanvas {
+            width: 100%;
+            height: 500px;
+            border-radius: 12px;
+            background: var(--primary-bg);
+            border: 2px solid var(--border-color);
+        }
+
+        .canvas-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-amber));
+            border: none;
+            border-radius: 10px;
+            color: var(--primary-bg);
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Outfit', sans-serif;
+            box-shadow: 0 4px 15px rgba(255, 107, 44, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 25px rgba(255, 107, 44, 0.5);
+        }
+
+        .btn-secondary {
+            background: var(--tertiary-bg);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
+            box-shadow: none;
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+            border-color: var(--accent-orange);
+        }
+
+        /* Control Panel */
+        .control-panel {
+            background: var(--secondary-bg);
+            padding: 25px;
+            border-radius: 20px;
+            border: 2px solid var(--border-color);
+            height: fit-content;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .control-section {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: var(--tertiary-bg);
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .control-section h3 {
+            font-family: 'Outfit', sans-serif;
+            color: var(--accent-orange);
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+        }
+
+        .slider-group {
+            margin-bottom: 18px;
+        }
+
+        .slider-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .slider-group input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: var(--primary-bg);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-amber));
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(255, 107, 44, 0.5);
+        }
+
+        .slider-group input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-amber));
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(255, 107, 44, 0.5);
+            border: none;
+        }
+
+        .value-display {
+            display: inline-block;
+            background: var(--primary-bg);
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            color: var(--accent-yellow);
+            margin-left: 10px;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .info-box {
+            background: var(--primary-bg);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid var(--accent-orange);
+            margin-bottom: 15px;
+        }
+
+        .info-box h4 {
+            color: var(--accent-yellow);
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            font-family: 'Fira Code', monospace;
+            font-weight: 600;
+        }
+
+        .info-box p {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin: 4px 0;
+        }
+
+        .info-box .value {
+            color: var(--accent-orange);
+            font-weight: 700;
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Data Table */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+            font-size: 0.9rem;
+            background: var(--primary-bg);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .data-table th {
+            background: var(--tertiary-bg);
+            color: var(--accent-yellow);
+            padding: 12px;
+            text-align: left;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .data-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            font-family: 'Fira Code', monospace;
+        }
+
+        .data-table tr:hover {
+            background: var(--tertiary-bg);
+        }
+
+        /* Answer Buttons */
+        .answer-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .answer-btn {
+            padding: 14px;
+            background: var(--tertiary-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .answer-btn:hover {
+            border-color: var(--accent-orange);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 107, 44, 0.2);
+        }
+
+        .answer-btn.selected {
+            border-color: var(--accent-yellow);
+            background: rgba(255, 186, 8, 0.1);
+            color: var(--accent-yellow);
+        }
+
+        .answer-btn.correct {
+            border-color: var(--success);
+            background: rgba(6, 214, 160, 0.2);
+            color: var(--success);
+            animation: pulse-correct 0.5s ease;
+        }
+
+        .answer-btn.incorrect {
+            border-color: var(--error);
+            background: rgba(239, 71, 111, 0.2);
+            color: var(--error);
+            animation: shake 0.5s ease;
+        }
+
+        @keyframes pulse-correct {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+
+        /* Feedback Messages */
+        .feedback {
+            padding: 16px;
+            border-radius: 10px;
+            margin-top: 15px;
+            font-size: 0.95rem;
+            display: none;
+            animation: slideInUp 0.4s ease;
+            border-left: 4px solid;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .feedback.success {
+            background: rgba(6, 214, 160, 0.15);
+            border-color: var(--success);
+            color: var(--success);
+            display: block;
+        }
+
+        .feedback.error {
+            background: rgba(239, 71, 111, 0.15);
+            border-color: var(--error);
+            color: var(--error);
+            display: block;
+        }
+
+        .feedback.info {
+            background: rgba(255, 186, 8, 0.15);
+            border-color: var(--warning);
+            color: var(--warning);
+            display: block;
+        }
+
+        /* Statistics Dashboard */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-card {
+            background: var(--tertiary-bg);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid var(--border-color);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent-orange);
+            box-shadow: 0 8px 25px rgba(255, 107, 44, 0.3);
+        }
+
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 800;
+            color: var(--accent-orange);
+            font-family: 'Outfit', sans-serif;
+            display: block;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            font-weight: 600;
+        }
+
+        /* Notes Tab */
+        .notes-container {
+            background: var(--secondary-bg);
+            padding: 45px;
+            border-radius: 20px;
+            border: 2px solid var(--border-color);
+            line-height: 1.8;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .notes-container h2 {
+            font-family: 'Outfit', sans-serif;
+            color: var(--accent-orange);
+            font-size: 2.2rem;
+            margin-bottom: 25px;
+            font-weight: 800;
+            border-bottom: 3px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+
+        .notes-container h3 {
+            font-family: 'Outfit', sans-serif;
+            color: var(--accent-yellow);
+            font-size: 1.6rem;
+            margin-top: 35px;
+            margin-bottom: 18px;
+            font-weight: 700;
+        }
+
+        .notes-container h4 {
+            font-family: 'Outfit', sans-serif;
+            color: var(--accent-amber);
+            font-size: 1.2rem;
+            margin-top: 25px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .notes-container p {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            font-size: 1.05rem;
+        }
+
+        .notes-container ul, .notes-container ol {
+            margin: 18px 0;
+            padding-left: 30px;
+            color: var(--text-secondary);
+        }
+
+        .notes-container li {
+            margin-bottom: 12px;
+            line-height: 1.7;
+        }
+
+        .notes-container strong {
+            color: var(--accent-orange);
+            font-weight: 700;
+        }
+
+        .highlight-box {
+            background: var(--tertiary-bg);
+            padding: 20px;
+            border-radius: 12px;
+            border-left: 4px solid var(--accent-orange);
+            margin: 25px 0;
+        }
+
+        .equation {
+            font-family: 'Fira Code', monospace;
+            background: var(--primary-bg);
+            padding: 12px 18px;
+            border-radius: 8px;
+            display: inline-block;
+            margin: 10px 0;
+            color: var(--accent-yellow);
+            font-weight: 600;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Settings Tab */
+        .settings-container {
+            background: var(--secondary-bg);
+            padding: 40px;
+            border-radius: 20px;
+            border: 2px solid var(--border-color);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .setting-group {
+            margin-bottom: 30px;
+            padding: 25px;
+            background: var(--tertiary-bg);
+            border-radius: 14px;
+            border: 2px solid var(--border-color);
+        }
+
+        .setting-group h3 {
+            font-family: 'Outfit', sans-serif;
+            color: var(--accent-orange);
+            margin-bottom: 18px;
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        .setting-group label {
+            display: block;
+            margin-bottom: 10px;
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .setting-group input[type="color"],
+        .setting-group input[type="number"],
+        .setting-group select {
+            width: 100%;
+            padding: 12px;
+            background: var(--primary-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .setting-group input:focus,
+        .setting-group select:focus {
+            outline: none;
+            border-color: var(--accent-orange);
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            margin-bottom: 12px;
+            padding: 10px;
+            background: var(--primary-bg);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .checkbox-label:hover {
+            background: var(--secondary-bg);
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 22px;
+            height: 22px;
+            margin-right: 12px;
+            cursor: pointer;
+            accent-color: var(--accent-orange);
+        }
+
+        /* Statistics Tab */
+        .stats-dashboard {
+            background: var(--secondary-bg);
+            padding: 40px;
+            border-radius: 20px;
+            border: 2px solid var(--border-color);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 25px;
+            background: var(--primary-bg);
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 10px 0;
+            border: 2px solid var(--border-color);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-orange), var(--accent-yellow));
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--primary-bg);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .simulation-container {
+                grid-template-columns: 1fr;
+            }
+
+            .control-panel {
+                max-width: 700px;
+                margin: 0 auto;
+            }
+
+            .mode-selector {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+
+            .tab-navigation {
+                flex-direction: column;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .mode-selector {
+                grid-template-columns: 1fr;
+            }
+
+            .answer-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--accent-orange);
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Legend */
+        .legend {
+            background: var(--tertiary-bg);
+            padding: 18px;
+            border-radius: 10px;
+            border: 2px solid var(--border-color);
+            margin-top: 18px;
+        }
+
+        .legend h4 {
+            color: var(--accent-orange);
+            margin-bottom: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .legend-color {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            margin-right: 12px;
+            border: 2px solid var(--border-color);
+        }
+
+        /* Input Groups */
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 11px;
+            background: var(--primary-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'Fira Code', monospace;
+            font-size: 0.9rem;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--accent-orange);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚗️ Rates of Reaction Simulator</h1>
+            <p class="subtitle">Interactive Chemical Kinetics Lab</p>
+        </header>
+
+        <!-- Tab Navigation -->
+        <div class="tab-navigation">
+            <button class="tab-btn active" onclick="switchTab('simulation')">Simulation</button>
+            <button class="tab-btn" onclick="switchTab('notes')">Notes</button>
+            <button class="tab-btn" onclick="switchTab('statistics')">Statistics</button>
+            <button class="tab-btn" onclick="switchTab('settings')">Settings</button>
+        </div>
+
+        <!-- Simulation Tab -->
+        <div id="simulation-tab" class="tab-content active">
+            <div class="simulation-container">
+                <div class="canvas-section">
+                    <!-- Mode Selector -->
+                    <div class="mode-selector">
+                        <button class="mode-btn active" onclick="changeMode('boltzmann')">Boltzmann Distribution</button>
+                        <button class="mode-btn" onclick="changeMode('energy')">Energy Profile</button>
+                        <button class="mode-btn" onclick="changeMode('concentration')">Concentration-Time</button>
+                        <button class="mode-btn" onclick="changeMode('rate')">Rate vs Concentration</button>
+                        <button class="mode-btn" onclick="changeMode('order')">Order Determination</button>
+                        <button class="mode-btn" onclick="changeMode('halflife')">Half-Life Analysis</button>
+                    </div>
+
+                    <!-- Main Canvas -->
+                    <canvas id="mainCanvas"></canvas>
+
+                    <!-- Canvas Controls -->
+                    <div class="canvas-controls">
+                        <button class="btn" onclick="resetGraph()">Reset</button>
+                        <button class="btn btn-secondary" onclick="exportImage()">Export Image</button>
+                        <button class="btn btn-secondary" onclick="exportData()">Export Data</button>
+                    </div>
+
+                    <!-- Legend (shown conditionally) -->
+                    <div class="legend" id="graphLegend" style="display: none;">
+                        <h4>Legend</h4>
+                        <div id="legendContent"></div>
+                    </div>
+                </div>
+
+                <!-- Control Panel -->
+                <div class="control-panel" id="controlPanel">
+                    <!-- Dynamic content loaded based on mode -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Notes Tab -->
+        <div id="notes-tab" class="tab-content">
+            <div class="notes-container">
+                <h2>Chemical Kinetics - Rates of Reaction</h2>
+
+                <h3>1. Collision Theory</h3>
+                <p>Chemical reactions occur when particles collide with sufficient energy and proper orientation. For a reaction to take place:</p>
+                <ul>
+                    <li>Particles must <strong>collide</strong> with each other</li>
+                    <li>The collision must have <strong>sufficient energy</strong> to break bonds (activation energy)</li>
+                    <li>Particles must have the <strong>correct orientation</strong> for reactive sites to interact</li>
+                </ul>
+
+                <div class="highlight-box">
+                    <h4>Activation Energy (Ea)</h4>
+                    <p>The minimum energy required for a collision to result in a reaction. Only particles with energy ≥ Ea can successfully react.</p>
+                </div>
+
+                <h3>2. Boltzmann Distribution</h3>
+                <p>At any temperature above absolute zero, particles have a distribution of energies. The <strong>Boltzmann distribution</strong> shows:</p>
+                <ul>
+                    <li>Most particles have energy near the average</li>
+                    <li>Some particles have very low energy</li>
+                    <li>Some particles have very high energy</li>
+                    <li>The area under the curve to the right of Ea represents particles that can react</li>
+                </ul>
+
+                <p><strong>Effect of Temperature:</strong> As temperature increases, the distribution shifts to higher energies, and more particles exceed the activation energy threshold.</p>
+
+                <h3>3. Factors Affecting Reaction Rate</h3>
+
+                <h4>Concentration</h4>
+                <p>Increasing concentration increases the number of particles per unit volume, leading to more frequent collisions and a higher reaction rate.</p>
+
+                <h4>Temperature</h4>
+                <p>Increasing temperature has two effects:</p>
+                <ul>
+                    <li>Particles move faster, causing more frequent collisions</li>
+                    <li>More particles have energy ≥ Ea (Boltzmann distribution shifts right)</li>
+                </ul>
+                <p class="equation">v ∝ √T (velocity proportional to square root of temperature)</p>
+
+                <h4>Surface Area</h4>
+                <p>For solid reactants, increasing surface area (e.g., grinding into powder) exposes more particles to collision, increasing reaction rate.</p>
+
+                <h4>Catalysts</h4>
+                <p>A catalyst speeds up a reaction without being consumed. It works by:</p>
+                <ul>
+                    <li>Providing an alternative reaction pathway with <strong>lower activation energy</strong></li>
+                    <li>More particles now have sufficient energy to react</li>
+                    <li>The catalyst is regenerated at the end of the reaction</li>
+                </ul>
+
+                <div class="highlight-box">
+                    <h4>Enzymes - Biological Catalysts</h4>
+                    <p>Enzymes are highly specific protein catalysts that work through the <strong>lock-and-key mechanism</strong>. The substrate fits into the enzyme's active site, forming an enzyme-substrate complex.</p>
+                </div>
+
+                <h3>4. Measuring Reaction Rate</h3>
+                <p>Rate of reaction can be measured as:</p>
+                <p class="equation">Rate = Δ[concentration] / Δtime</p>
+                <p class="equation">Units: mol dm⁻³ s⁻¹</p>
+
+                <p>Methods of measurement include:</p>
+                <ul>
+                    <li>Change in concentration of reactant or product over time</li>
+                    <li>Volume of gas evolved</li>
+                    <li>Change in mass</li>
+                    <li>Change in color intensity (colorimetry)</li>
+                    <li>Change in pH</li>
+                </ul>
+
+                <h3>5. Rate Equations and Order of Reaction</h3>
+
+                <h4>Rate Equation</h4>
+                <p>For a general reaction: A + B → products</p>
+                <p class="equation">rate = k [A]ᵃ [B]ᵇ</p>
+                <p>Where:</p>
+                <ul>
+                    <li><strong>k</strong> = rate constant (increases with temperature)</li>
+                    <li><strong>a</strong> = order with respect to A</li>
+                    <li><strong>b</strong> = order with respect to B</li>
+                    <li><strong>Overall order</strong> = a + b</li>
+                </ul>
+
+                <h4>Zero-Order Reactions</h4>
+                <p>Rate is <strong>independent</strong> of reactant concentration.</p>
+                <p class="equation">rate = k [A]⁰ = k</p>
+                <ul>
+                    <li>Concentration-time graph: straight line with negative slope</li>
+                    <li>Rate-concentration graph: horizontal line</li>
+                    <li>Example: Surface-catalyzed reactions where surface is saturated</li>
+                </ul>
+
+                <h4>First-Order Reactions</h4>
+                <p>Rate is <strong>directly proportional</strong> to one reactant concentration.</p>
+                <p class="equation">rate = k [A]¹</p>
+                <ul>
+                    <li>Concentration-time graph: exponential decay curve</li>
+                    <li>Rate-concentration graph: straight line through origin</li>
+                    <li>Constant half-life</li>
+                    <li>Example: Radioactive decay, many decomposition reactions</li>
+                </ul>
+
+                <h4>Second-Order Reactions</h4>
+                <p>Rate is proportional to concentration squared (or product of two concentrations).</p>
+                <p class="equation">rate = k [A]²  or  rate = k [A][B]</p>
+                <ul>
+                    <li>Concentration-time graph: steeper curve than first-order</li>
+                    <li>Rate-concentration graph: parabolic curve</li>
+                    <li>Half-life increases as concentration decreases</li>
+                </ul>
+
+                <h3>6. Determining Order from Experimental Data</h3>
+
+                <h4>Method 1: Initial Rates Method</h4>
+                <p>Conduct multiple experiments varying one reactant concentration at a time:</p>
+                <ul>
+                    <li>If doubling [A] doubles the rate → first order in A</li>
+                    <li>If doubling [A] quadruples the rate → second order in A</li>
+                    <li>If doubling [A] has no effect on rate → zero order in A</li>
+                </ul>
+
+                <h4>Method 2: Graphical Method</h4>
+                <p>Plot concentration vs time data:</p>
+                <ul>
+                    <li><strong>Zero order:</strong> [A] vs t gives straight line</li>
+                    <li><strong>First order:</strong> ln[A] vs t gives straight line (slope = -k)</li>
+                    <li><strong>Second order:</strong> 1/[A] vs t gives straight line (slope = k)</li>
+                </ul>
+
+                <h4>Method 3: Half-Life Method</h4>
+                <p>For first-order reactions only:</p>
+                <p class="equation">t½ = 0.693 / k</p>
+                <p>If half-life is constant regardless of initial concentration, the reaction is first-order.</p>
+
+                <h3>7. Energy Profiles (Reaction Coordinate Diagrams)</h3>
+                <p>Energy profiles show the energy changes during a reaction:</p>
+                <ul>
+                    <li><strong>X-axis:</strong> Reaction coordinate (progress of reaction)</li>
+                    <li><strong>Y-axis:</strong> Potential energy</li>
+                    <li><strong>Transition state:</strong> Maximum energy point (activated complex)</li>
+                    <li><strong>Ea (forward):</strong> Energy difference between reactants and transition state</li>
+                    <li><strong>ΔH:</strong> Enthalpy change (energy difference between products and reactants)</li>
+                </ul>
+
+                <div class="highlight-box">
+                    <h4>Exothermic vs Endothermic</h4>
+                    <p><strong>Exothermic (ΔH < 0):</strong> Products are lower in energy than reactants. Energy is released.</p>
+                    <p><strong>Endothermic (ΔH > 0):</strong> Products are higher in energy than reactants. Energy is absorbed.</p>
+                </div>
+
+                <h3>8. Catalyst Effect on Energy Profile</h3>
+                <p>A catalyst provides an alternative pathway with lower Ea:</p>
+                <ul>
+                    <li>The activation energy is reduced</li>
+                    <li>More particles can overcome the energy barrier</li>
+                    <li>ΔH remains unchanged (same start and end points)</li>
+                    <li>Both forward and reverse reactions are catalyzed equally</li>
+                </ul>
+
+                <h3>9. Calculating Rates from Graphs</h3>
+                <p>To find the instantaneous rate at a specific time:</p>
+                <ol>
+                    <li>Draw a tangent to the curve at that point</li>
+                    <li>Calculate the slope of the tangent: Δy / Δx</li>
+                    <li>The slope gives the rate at that instant</li>
+                </ol>
+
+                <p class="equation">rate = -Δ[A] / Δt  (for reactants)</p>
+                <p class="equation">rate = +Δ[B] / Δt  (for products)</p>
+
+                <h3>10. Important Applications</h3>
+
+                <h4>Industrial Processes</h4>
+                <ul>
+                    <li><strong>Haber Process:</strong> Iron catalyst for ammonia synthesis</li>
+                    <li><strong>Contact Process:</strong> Vanadium(V) oxide catalyst for sulfuric acid</li>
+                    <li><strong>Catalytic Converters:</strong> Platinum/rhodium for vehicle emissions</li>
+                </ul>
+
+                <h4>Biological Systems</h4>
+                <ul>
+                    <li><strong>Enzyme catalysis:</strong> Amylase (starch → sugars), Catalase (H₂O₂ decomposition)</li>
+                    <li><strong>Temperature sensitivity:</strong> Enzyme denaturation at high temperatures</li>
+                    <li><strong>pH sensitivity:</strong> Optimal pH ranges for enzyme activity</li>
+                </ul>
+
+                <h3>Key Formulas Summary</h3>
+                <div class="highlight-box">
+                    <p class="equation">rate = k [A]ᵃ [B]ᵇ</p>
+                    <p class="equation">t½ = 0.693 / k  (first-order only)</p>
+                    <p class="equation">KE = ½mv²</p>
+                    <p class="equation">KE = (3/2)kT  (for ideal gas)</p>
+                    <p class="equation">v ∝ √T</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Tab -->
+        <div id="statistics-tab" class="tab-content">
+            <div class="stats-dashboard">
+                <h2 style="font-family: 'Outfit', sans-serif; color: var(--accent-orange); font-size: 2.2rem; margin-bottom: 30px;">Practice Statistics</h2>
+
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-value" id="totalQuestions">0</span>
+                        <span class="stat-label">Total Questions</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="correctAnswers">0</span>
+                        <span class="stat-label">Correct</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="incorrectAnswers">0</span>
+                        <span class="stat-label">Incorrect</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="accuracyPercent">0%</span>
+                        <span class="stat-label">Accuracy</span>
+                    </div>
+                </div>
+
+                <h3 style="font-family: 'Outfit', sans-serif; color: var(--accent-yellow); font-size: 1.6rem; margin-top: 40px; margin-bottom: 20px;">Performance by Topic</h3>
+
+                <div class="control-section">
+                    <h3>Order Determination</h3>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="orderProgress" style="width: 0%;">0%</div>
+                    </div>
+                    <p style="color: var(--text-secondary); margin-top: 10px;">
+                        <span id="orderCorrect">0</span> / <span id="orderTotal">0</span> correct
+                    </p>
+                </div>
+
+                <div class="control-section">
+                    <h3>Graph Interpretation</h3>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="graphProgress" style="width: 0%;">0%</div>
+                    </div>
+                    <p style="color: var(--text-secondary); margin-top: 10px;">
+                        <span id="graphCorrect">0</span> / <span id="graphTotal">0</span> correct
+                    </p>
+                </div>
+
+                <div class="control-section">
+                    <h3>Half-Life Calculations</h3>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="halflifeProgress" style="width: 0%;">0%</div>
+                    </div>
+                    <p style="color: var(--text-secondary); margin-top: 10px;">
+                        <span id="halflifeCorrect">0</span> / <span id="halflifeTotal">0</span> correct
+                    </p>
+                </div>
+
+                <div class="control-section">
+                    <h3>Rate Calculations</h3>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="rateProgress" style="width: 0%;">0%</div>
+                    </div>
+                    <p style="color: var(--text-secondary); margin-top: 10px;">
+                        <span id="rateCorrect">0</span> / <span id="rateTotal">0</span> correct
+                    </p>
+                </div>
+
+                <button class="btn" style="margin-top: 30px;" onclick="resetAllStats()">Reset All Statistics</button>
+                <button class="btn btn-secondary" style="margin-top: 30px;" onclick="exportStats()">Export Statistics</button>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div id="settings-tab" class="tab-content">
+            <div class="settings-container">
+                <h2 style="font-family: 'Outfit', sans-serif; color: var(--accent-orange); font-size: 2.2rem; margin-bottom: 30px;">Settings</h2>
+
+                <div class="setting-group">
+                    <h3>Display Options</h3>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="showGrid" checked onchange="updateSettings()">
+                        <span>Show Grid Lines</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="showLegend" checked onchange="updateSettings()">
+                        <span>Show Legend</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="showLabels" checked onchange="updateSettings()">
+                        <span>Show Axis Labels</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="showValues" checked onchange="updateSettings()">
+                        <span>Show Numerical Values on Graphs</span>
+                    </label>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Color Customization</h3>
+                    <label>Graph Line Color</label>
+                    <input type="color" id="lineColor" value="#ff6b2c" onchange="updateSettings()">
+                    
+                    <label style="margin-top: 15px;">Activation Energy Color</label>
+                    <input type="color" id="eaColor" value="#e63946" onchange="updateSettings()">
+                    
+                    <label style="margin-top: 15px;">Transition State Color</label>
+                    <input type="color" id="transitionColor" value="#ffba08" onchange="updateSettings()">
+                </div>
+
+                <div class="setting-group">
+                    <h3>Practice Mode</h3>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="autoGenerate" onchange="updateSettings()">
+                        <span>Auto-generate next question after correct answer</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="showHints" checked onchange="updateSettings()">
+                        <span>Show hints for problems</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="showExplanations" checked onchange="updateSettings()">
+                        <span>Show detailed explanations</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="showWorkings" checked onchange="updateSettings()">
+                        <span>Show step-by-step workings</span>
+                    </label>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Difficulty Level</h3>
+                    <label>Question Difficulty</label>
+                    <select id="difficultyLevel" onchange="updateSettings()">
+                        <option value="easy">Easy (Simple orders, clear data)</option>
+                        <option value="medium" selected>Medium (Mixed orders, some noise)</option>
+                        <option value="hard">Hard (Complex cases, realistic data)</option>
+                    </select>
+                </div>
+
+                <div class="setting-group">
+                    <h3>Graph Settings</h3>
+                    <label>Animation Speed</label>
+                    <input type="number" id="animSpeed" value="1" min="0.5" max="3" step="0.5" onchange="updateSettings()">
+                    
+                    <label style="margin-top: 15px;">Data Points</label>
+                    <input type="number" id="dataPoints" value="50" min="20" max="200" step="10" onchange="updateSettings()">
+                    
+                    <label style="margin-top: 15px;">Line Thickness</label>
+                    <input type="number" id="lineThickness" value="3" min="1" max="8" step="1" onchange="updateSettings()">
+                </div>
+
+                <button class="btn" onclick="saveSettings()">Save Settings</button>
+                <button class="btn btn-secondary" onclick="resetSettings()">Reset to Defaults</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="rates-of-reaction-simulator.js"></script>
+</body>
+</html>
